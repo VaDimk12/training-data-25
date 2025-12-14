@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Клас BasicDataOperationUsingMap реалізує операції з колекціями типу Map для зберігання пар ключ-значення.
@@ -28,24 +29,8 @@ public class BasicDataOperationUsingMap {
     private final String VALUE_TO_SEARCH_AND_DELETE = "Андрій";
     private final String VALUE_TO_ADD = "Богдан";
 
-    private HashMap<Mouse, String> hashMap;
-    private Hashtable<Mouse, String> hashtable;
-
-    /**
-     * Компаратор для сортування Map.Entry за значеннями String.
-     * Використовує метод String.compareTo() для порівняння імен власників.
-     */
-    static class OwnerValueComparator implements Comparator<Map.Entry<Mouse, String>> {
-        @Override
-        public int compare(Map.Entry<Mouse, String> e1, Map.Entry<Mouse, String> e2) {
-            String v1 = e1.getValue();
-            String v2 = e2.getValue();
-            if (v1 == null && v2 == null) return 0;
-            if (v1 == null) return -1;
-            if (v2 == null) return 1;
-            return v1.compareTo(v2);
-        }
-    }
+    private Map<Mouse, String> hashMap;
+    private Map<Mouse, String> hashtable;
 
     /**
      * Внутрішній клас Mouse для зберігання інформації про домашню тварину.
@@ -246,9 +231,7 @@ public class BasicDataOperationUsingMap {
         System.out.println("\n=== Пари ключ-значення в Hashtable ===");
         long timeStart = System.nanoTime();
 
-        for (Map.Entry<Mouse, String> entry : hashtable.entrySet()) {
-            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
-        }
+        hashtable.entrySet().forEach(entry -> System.out.println("  " + entry.getKey() + " -> " + entry.getValue()));
 
         PerformanceTracker.displayOperationTime(timeStart, "виведення пари ключ-значення в Hashtable");
     }
@@ -261,18 +244,9 @@ public class BasicDataOperationUsingMap {
     private void sortHashtable() {
         long timeStart = System.nanoTime();
 
-        // Створюємо список ключів і сортуємо за природним порядком Mouse
-        List<Mouse> sortedKeys = new ArrayList<>(hashtable.keySet());
-        Collections.sort(sortedKeys);
-        
-        // Створюємо нову Hashtable з відсортованими ключами
-        Hashtable<Mouse, String> sortedHashtable = new Hashtable<>();
-        for (Mouse key : sortedKeys) {
-            sortedHashtable.put(key, hashtable.get(key));
-        }
-        
-        // Перезаписуємо оригінальну hashtable
-        hashtable = sortedHashtable;
+        hashtable = hashtable.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, java.util.LinkedHashMap::new));
 
         PerformanceTracker.displayOperationTime(timeStart, "сортування Hashtable за ключами");
     }
@@ -303,25 +277,14 @@ public class BasicDataOperationUsingMap {
     void findByValueInHashtable() {
         long timeStart = System.nanoTime();
 
-        // Створюємо список Entry та сортуємо за значеннями
-        List<Map.Entry<Mouse, String>> entries = new ArrayList<>(hashtable.entrySet());
-        OwnerValueComparator comparator = new OwnerValueComparator();
-        Collections.sort(entries, comparator);
+        java.util.Optional<Map.Entry<Mouse, String>> found = hashtable.entrySet().stream()
+                .filter(e -> VALUE_TO_SEARCH_AND_DELETE.equals(e.getValue()))
+                .findFirst();
 
-        // Створюємо тимчасовий Entry для пошуку
-        Map.Entry<Mouse, String> searchEntry = new Map.Entry<Mouse, String>() {
-            public Mouse getKey() { return null; }
-            public String getValue() { return VALUE_TO_SEARCH_AND_DELETE; }
-            public String setValue(String value) { return null; }
-        };
+        PerformanceTracker.displayOperationTime(timeStart, "пошук за значенням в Hashtable");
 
-        int position = Collections.binarySearch(entries, searchEntry, comparator);
-
-        PerformanceTracker.displayOperationTime(timeStart, "бінарний пошук за значенням в Hashtable");
-
-        if (position >= 0) {
-            Map.Entry<Mouse, String> foundEntry = entries.get(position);
-            System.out.println("Власник '" + VALUE_TO_SEARCH_AND_DELETE + "' має тварину: " + foundEntry.getKey());
+        if (found.isPresent()) {
+            System.out.println("Власник '" + VALUE_TO_SEARCH_AND_DELETE + "' має тварину: " + found.get().getKey());
         } else {
             System.out.println("Власник '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутній в Hashtable.");
         }
@@ -363,16 +326,12 @@ public class BasicDataOperationUsingMap {
     void removeByValueFromHashtable() {
         long timeStart = System.nanoTime();
 
-        List<Mouse> keysToRemove = new ArrayList<>();
-        for (Map.Entry<Mouse, String> entry : hashtable.entrySet()) {
-            if (entry.getValue() != null && entry.getValue().equals(VALUE_TO_SEARCH_AND_DELETE)) {
-                keysToRemove.add(entry.getKey());
-            }
-        }
+        List<Mouse> keysToRemove = hashtable.entrySet().stream()
+                .filter(e -> VALUE_TO_SEARCH_AND_DELETE.equals(e.getValue()))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
         
-        for (Mouse key : keysToRemove) {
-            hashtable.remove(key);
-        }
+        keysToRemove.forEach(hashtable::remove);
 
         PerformanceTracker.displayOperationTime(timeStart, "видалення за значенням з Hashtable");
 
@@ -389,9 +348,7 @@ public class BasicDataOperationUsingMap {
         System.out.println("\n=== Пари ключ-значення в HashMap ===");
 
         long timeStart = System.nanoTime();
-        for (Map.Entry<Mouse, String> entry : hashMap.entrySet()) {
-            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
-        }
+        hashMap.entrySet().forEach(entry -> System.out.println("  " + entry.getKey() + " -> " + entry.getValue()));
 
         PerformanceTracker.displayOperationTime(timeStart, "виведення пар ключ-значення в HashMap");
     }
@@ -404,18 +361,9 @@ public class BasicDataOperationUsingMap {
     private void sortHashMap() {
         long timeStart = System.nanoTime();
 
-        // Створюємо список ключів і сортуємо за природним порядком Mouse
-        List<Mouse> sortedKeys = new ArrayList<>(hashMap.keySet());
-        Collections.sort(sortedKeys);
-        
-        // Створюємо нову HashMap з відсортованими ключами
-        HashMap<Mouse, String> sortedHashMap = new HashMap<>();
-        for (Mouse key : sortedKeys) {
-            sortedHashMap.put(key, hashMap.get(key));
-        }
-        
-        // Перезаписуємо оригінальну hashMap
-        hashMap = sortedHashMap;
+        hashMap = hashMap.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, java.util.LinkedHashMap::new));
 
         PerformanceTracker.displayOperationTime(timeStart, "сортування HashMap за ключами");
     }
@@ -446,27 +394,15 @@ public class BasicDataOperationUsingMap {
     void findByValueInHashMap() {
         long timeStart = System.nanoTime();
 
-        // Створюємо список записів і сортуємо за ключами
-        List<Map.Entry<Mouse, String>> entries = new ArrayList<>(hashMap.entrySet());
-        Collections.sort(entries, new Comparator<Map.Entry<Mouse, String>>() {
-            @Override
-            public int compare(Map.Entry<Mouse, String> e1, Map.Entry<Mouse, String> e2) {
-                return e1.getKey().compareTo(e2.getKey());
-            }
-        });
+        List<Map.Entry<Mouse, String>> foundEntries = hashMap.entrySet().stream()
+                .filter(e -> VALUE_TO_SEARCH_AND_DELETE.equals(e.getValue()))
+                .collect(Collectors.toList());
 
-        // Шукаємо за значенням
-        boolean found = false;
-        for (Map.Entry<Mouse, String> entry : entries) {
-            if (VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue())) {
-                System.out.println("Власник '" + VALUE_TO_SEARCH_AND_DELETE + "' має тварину: " + entry.getKey());
-                found = true;
-            }
-        }
+        foundEntries.forEach(e -> System.out.println("Власник '" + VALUE_TO_SEARCH_AND_DELETE + "' має тварину: " + e.getKey()));
 
         PerformanceTracker.displayOperationTime(timeStart, "пошук за значенням в HashMap");
 
-        if (!found) {
+        if (foundEntries.isEmpty()) {
             System.out.println("Власник '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутній в HashMap.");
         }
     }
@@ -507,16 +443,12 @@ public class BasicDataOperationUsingMap {
     private void removeByValueFromHashMap() {
         long timeStart = System.nanoTime();
 
-        List<Mouse> keysToRemove = new ArrayList<>();
-        for (Map.Entry<Mouse, String> entry : hashMap.entrySet()) {
-            if (VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue())) {
-                keysToRemove.add(entry.getKey());
-            }
-        }
+        List<Mouse> keysToRemove = hashMap.entrySet().stream()
+                .filter(e -> VALUE_TO_SEARCH_AND_DELETE.equals(e.getValue()))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
 
-        for (Mouse key : keysToRemove) {
-            hashMap.remove(key);
-        }
+        keysToRemove.forEach(hashMap::remove);
 
         PerformanceTracker.displayOperationTime(timeStart, "видалення за значенням з HashMap");
 
@@ -557,5 +489,7 @@ public class BasicDataOperationUsingMap {
         operations.executeDataOperations();
     }
 }
+
+
 
 
