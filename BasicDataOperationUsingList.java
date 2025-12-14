@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Клас BasicDataOperationUsingList реалізує операції з колекціями типу LinkedList для даних LocalTime.
@@ -72,7 +73,7 @@ public class BasicDataOperationUsingList {
     void performArraySorting() {
         long timeStart = System.nanoTime();
 
-        Arrays.sort(localTimeArray);
+        localTimeArray = Arrays.stream(localTimeArray).sorted().toArray(LocalTime[]::new);
 
         PerformanceTracker.displayOperationTime(timeStart, "упорядкування масиву дати i часу");
     }
@@ -83,14 +84,23 @@ public class BasicDataOperationUsingList {
     void findInArray() {
         long timeStart = System.nanoTime();
 
-        int position = Arrays.binarySearch(this.localTimeArray, localTimeValueToSearch);
+        boolean found = Arrays.stream(localTimeArray).anyMatch(t -> t.equals(localTimeValueToSearch));
+        int position = -1;
+        if (found) {
+            for (int i = 0; i < localTimeArray.length; i++) {
+                if (localTimeArray[i].equals(localTimeValueToSearch)) {
+                    position = i;
+                    break;
+                }
+            }
+        }
 
         PerformanceTracker.displayOperationTime(timeStart, "пошук елемента в масивi типу LocalTime");
 
         if (position >= 0) {
             System.out.println("Елемент '" + localTimeValueToSearch + "' знайдено в масивi за позицією: " + position);
         } else {
-                System.out.println("Елемент '" + localTimeValueToSearch + "' відсутній в масиві.");
+            System.out.println("Елемент '" + localTimeValueToSearch + "' відсутній в масиві.");
         }
     }
 
@@ -105,17 +115,8 @@ public class BasicDataOperationUsingList {
 
         long timeStart = System.nanoTime();
 
-        LocalTime minValue = localTimeArray[0];
-        LocalTime maxValue = localTimeArray[0];
-
-        for (LocalTime currentTime : localTimeArray) {
-            if (currentTime.isBefore(minValue)) {
-                minValue = currentTime;
-            }
-            if (currentTime.isAfter(maxValue)) {
-                maxValue = currentTime;
-            }
-        }
+        LocalTime minValue = Arrays.stream(localTimeArray).min(LocalTime::compareTo).orElse(null);
+        LocalTime maxValue = Arrays.stream(localTimeArray).max(LocalTime::compareTo).orElse(null);
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мiнiмальної i максимальної дати в масивi");
 
@@ -129,7 +130,11 @@ public class BasicDataOperationUsingList {
     void findInList() {
         long timeStart = System.nanoTime();
 
-        int position = Collections.binarySearch(this.localTimeList, localTimeValueToSearch);
+        boolean found = localTimeList.stream().anyMatch(t -> t.equals(localTimeValueToSearch));
+        int position = -1;
+        if (found) {
+            position = localTimeList.indexOf(localTimeValueToSearch);
+        }
 
         PerformanceTracker.displayOperationTime(timeStart, "пошук елемента в List типу LocalTime");        
 
@@ -151,8 +156,8 @@ public class BasicDataOperationUsingList {
 
         long timeStart = System.nanoTime();
 
-        LocalTime minValue = Collections.min(localTimeList);
-        LocalTime maxValue = Collections.max(localTimeList);
+        LocalTime minValue = localTimeList.stream().min(LocalTime::compareTo).orElse(null);
+        LocalTime maxValue = localTimeList.stream().max(LocalTime::compareTo).orElse(null);
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мiнiмального i максимального значення в List типу LocalTime");
 
@@ -167,7 +172,7 @@ public class BasicDataOperationUsingList {
     void sortList() {
         long timeStart = System.nanoTime();
 
-        Collections.sort(localTimeList);
+        localTimeList = localTimeList.stream().sorted().collect(Collectors.toCollection(LinkedList::new));
 
         PerformanceTracker.displayOperationTime(timeStart, "упорядкування LinkedList типу LocalTime");
     }
