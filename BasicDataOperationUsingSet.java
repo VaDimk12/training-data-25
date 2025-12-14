@@ -123,7 +123,7 @@ public class BasicDataOperationUsingSet {
     private void findInSet() {
         long timeStart = System.nanoTime();
 
-        boolean elementExists = this.localTimeSet.contains(localTimeValueToSearch);
+        boolean elementExists = this.localTimeSet.stream().anyMatch(t -> t.equals(localTimeValueToSearch));
 
         PerformanceTracker.displayOperationTime(timeStart, "пошук елемента в HashSet типу LocalTime");
 
@@ -145,8 +145,8 @@ public class BasicDataOperationUsingSet {
 
         long timeStart = System.nanoTime();
 
-        LocalTime minValue = Collections.min(localTimeSet);
-        LocalTime maxValue = Collections.max(localTimeSet);
+        LocalTime minValue = localTimeSet.stream().min(LocalTime::compareTo).orElse(null);
+        LocalTime maxValue = localTimeSet.stream().max(LocalTime::compareTo).orElse(null);
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мiнiмального i максимального значення в HashSet типу LocalTime");
 
@@ -161,13 +161,7 @@ public class BasicDataOperationUsingSet {
         System.out.println("Кiлькiсть елементiв в масивi: " + localTimeArray.length);
         System.out.println("Кiлькiсть елементiв в HashSet: " + localTimeSet.size());
 
-        boolean allElementsPresent = true;
-        for (LocalTime timeElement : localTimeArray) {
-            if (!localTimeSet.contains(timeElement)) {
-                allElementsPresent = false;
-                break;
-            }
-        }
+        boolean allElementsPresent = Arrays.stream(localTimeArray).allMatch(localTimeSet::contains);
 
         if (allElementsPresent) {
             System.out.println("Всi елементи масиву наявні в HashSet.");
